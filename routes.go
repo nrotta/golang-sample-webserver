@@ -14,26 +14,40 @@ type response struct {
 func register(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	if email == "" {
-		jsonResponse("Missing email", w)
+		jsonResponse(response{"Missing email"}, w)
 		return
 	}
 
-	token, err := generateToken(email)
+	user, err := insertUser(email)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	jsonResponse(token, w)
+	token, err := generateToken(user)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(response{token}, w)
 }
 
 var private = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 	token := r.Context().Value("user")
-	jsonResponse(token.(*jwt.Token).Claims.(jwt.MapClaims)["email"].(string), w)
+	id := token.(*jwt.Token).Claims.(jwt.MapClaims)["id"].(string)
+
+	user, err := findUserByID(id)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	jsonResponse(response{user.Email}, w)
 })
 
-func jsonResponse(payload string, w http.ResponseWriter) {
-	jsonResponse, err := json.Marshal(response{payload})
+func jsonResponse(r response, w http.ResponseWriter) {
+	jsonResponse, err := json.Marshal(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

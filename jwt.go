@@ -14,9 +14,10 @@ var jwtMiddleware = jwtmiddleware.New(jwtmiddleware.Options{
 	SigningMethod: jwt.SigningMethodHS256,
 })
 
-func generateToken(email string) (string, error) {
+func generateToken(u user) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"email": email,
+		"id":    u.ID,
+		"email": u.Email,
 	})
 
 	return token.SignedString(key)
